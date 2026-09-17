@@ -5,6 +5,11 @@ const app = express();
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ─── AI 配置（从环境变量读取，用户无需配置）───
+const AI_API_KEY = process.env.AI_API_KEY || '';
+const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.moonshot.cn/v1';
+const AI_MODEL = process.env.AI_MODEL || 'moonshot-v1-8k';
+
 // ─── 房间状态（内存存储，重启即清空）───
 const rooms = {};
 const ONLINE_THRESHOLD = 15000; // 15秒内有poll就算在线
@@ -14,7 +19,6 @@ function getRoom(roomId) {
     rooms[roomId] = {
       confessions: { male: [], female: [] },
       advices: [],
-      aiConfig: null,
       lastSeen: { male: 0, female: 0 },
       mentorThinking: false,
       mentorError: null,
@@ -35,7 +39,6 @@ function getFilteredState(room, identity) {
     },
     myConfessions: room.confessions[identity] || [],
     advices: room.advices,
-    hasConfig: room.aiConfig !== null,
     mentorThinking: room.mentorThinking,
     mentorError: room.mentorError,
   };
@@ -111,17 +114,16 @@ function buildUserPrompt(room) {
 }
 
 async function callMentor(room) {
-  if (!room.aiConfig) {
-    return { ok: false, error: '请先在设置中配置 AI API Key' };
+  if (!AI_API_KEY) {
+    return { ok: false, error: '服务器未配置 AI API Key，请联系管理员' };
   }
 
-  const { apiKey, baseURL, model } = room.aiConfig;
   const userPrompt = buildUserPrompt(room);
 
   try {
-    const url = `${baseURL}/chat/completions`;
+    const url = `${AI_BASE_URL}/chat/completions`;
     const body = {
-      model: model || 'moonshot-v1-8k',
+      model: AI_MODEL,
       messages: [
         { role: 'system', content: MENTOR_SYSTEM_PROMPT },
         { role: 'user', content: userPrompt },
@@ -134,7 +136,7 @@ async function callMentor(room) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${AI_API_KEY}`,
       },
       body: JSON.stringify(body),
     });
@@ -142,7 +144,7 @@ async function callMentor(room) {
     if (!resp.ok) {
       const errText = await resp.text();
       console.error('AI API error:', resp.status, errText);
-      return { ok: false, error: `AI 接口返回错误 (${resp.status})，请检查 API Key 和配置` };
+      return { ok: false, error: `AI 接口返回错误 (${resp.status})` };
     }
 
     const data = await resp.json();
@@ -229,23 +231,6 @@ app.post('/api/ask-mentor', async (req, res) => {
   }
 });
 
-// 配置AI
-app.post('/api/config', (req, res) => {
-  const { roomId, apiKey, baseURL, model } = req.body;
-  if (!roomId) {
-    return res.json({ ok: false, error: '参数无效' });
-  }
-
-  const room = getRoom(roomId);
-  room.aiConfig = {
-    apiKey: (apiKey || '').trim(),
-    baseURL: (baseURL || 'https://api.moonshot.cn/v1').trim(),
-    model: (model || 'moonshot-v1-8k').trim(),
-  };
-
-  res.json({ ok: true });
-});
-
 // 清除导师错误
 app.post('/api/clear-error', (req, res) => {
   const { roomId } = req.body;
@@ -267,4 +252,5 @@ setInterval(() => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`情感导师服务已启动: http://localhost:${PORT}`);
+  console.log(`AI 配置: ${AI_API_KEY ? '已配置' : '未配置（需要设置环境变量 AI_API_KEY）'}`);
 });
