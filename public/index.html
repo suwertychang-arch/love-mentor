@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>情感导师 · 你们的小房间</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #faf6f1;
+    --card: #ffffff;
+    --primary: #e88b8b;
+    --primary-dark: #d4736f;
+    --primary-light: #fce4e4;
+    --text: #4a3f3a;
+    --text-light: #8a7d77;
+    --border: #f0e8e0;
+    --radius: 16px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  body {
+    font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ─── 进入页 ─── */
+  #entryScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .logo {
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--primary), #f0a7a7);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 16px rgba(232,139,139,0.3);
+  }
+  .entry-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .entry-sub { font-size: 14px; color: var(--text-light); margin-bottom: 28px; }
+  .entry-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%; max-width: 360px;
+    box-shadow: var(--shadow);
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; color: var(--text-light); margin-bottom: 8px; display: block; }
+  .form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 16px;
+    background: var(--bg);
+    color: var(--text);
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--primary); outline: none; }
+  .identity-select {
+    display: flex; gap: 12px;
+  }
+  .identity-btn {
+    flex: 1;
+    padding: 14px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg);
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .identity-btn.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    font-weight: 600;
+  }
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-primary:active { background: var(--primary-dark); }
+  .btn-primary:disabled { opacity: 0.5; }
+
+  /* ─── 主界面 ─── */
+  #mainScreen { display: none; flex-direction: column; height: 100vh; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .room-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ccc;
+    transition: background 0.3s;
+  }
+  .room-dot.online { background: #6bbf59; }
+  .room-info { font-size: 13px; color: var(--text-light); }
+  .topbar-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border: none; background: var(--bg);
+    border-radius: 10px;
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ─── 建议墙 ─── */
+  .advice-wall {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .advice-empty {
+    text-align: center; color: var(--text-light);
+    padding: 60px 20px; font-size: 14px; line-height: 1.8;
+  }
+  .advice-empty .emoji { font-size: 40px; margin-bottom: 12px; }
+  .advice-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    animation: fadeUp 0.4s ease;
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .advice-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .advice-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), #f0a7a7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #fff;
+  }
+  .advice-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .advice-time { font-size: 12px; color: var(--text-light); margin-left: auto; }
+  .advice-content { font-size: 15px; line-height: 1.75; white-space: pre-wrap; word-break: break-word; }
+  .advice-content strong { font-weight: 600; color: var(--primary-dark); }
+
+  /* 思考动画 */
+  .thinking-card {
+    display: none;
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow);
+    align-items: center; gap: 8px;
+  }
+  .thinking-card.show { display: flex; }
+  .thinking-dots { display: flex; gap: 4px; }
+  .thinking-dots span {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--primary);
+    animation: bounce 1.4s infinite ease-in-out;
+  }
+  .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+  .thinking-text { font-size: 14px; color: var(--text-light); }
+
+  /* ─── 倾诉区 ─── */
+  .confession-area {
+    flex-shrink: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .confession-label {
+    font-size: 12px; color: var(--text-light);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .confession-label .lock { font-size: 13px; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .tag-btn {
+    padding: 5px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    background: var(--bg);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tag-btn.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary-dark);
+  }
+  .confess-input {
+    width: 100%;
+    min-height: 72px;
+    max-height: 120px;
+    padding: 10px 12px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--text);
+    resize: none;
+    transition: border-color 0.2s;
+  }
+  .confess-input:focus { border-color: var(--primary); outline: none; }
+  .confess-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-confess {
+    padding: 10px 16px;
+    background: var(--card);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .btn-mentor {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-mentor:disabled { opacity: 0.5; }
+
+  /* ─── 我的倾诉历史 ─── */
+  .my-confessions {
+    max-height: 100px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+  }
+  .my-confession-item {
+    font-size: 12px; color: var(--text-light);
+    padding: 6px 10px;
+    background: var(--bg);
+    border-radius: 8px;
+    margin-bottom: 4px;
+    line-height: 1.5;
+  }
+  .my-confession-item .tags { color: var(--primary); margin-right: 6px; }
+  .my-confession-item .text { color: var(--text); }
+
+  /* ─── 设置弹窗 ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%; max-width: 380px;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--text-light); margin-bottom: 20px; line-height: 1.6; }
+  .preset-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .preset-btn {
+    flex: 1; padding: 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    font-size: 13px; cursor: pointer;
+    text-align: center;
+  }
+  .preset-btn.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
+  .modal-footer { display: flex; gap: 8px; margin-top: 16px; }
+  .btn-cancel {
+    flex: 1; padding: 12px;
+    background: var(--bg); color: var(--text-light);
+    border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 15px; cursor: pointer;
+  }
+  .btn-save {
+    flex: 1; padding: 12px;
+    background: var(--primary); color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+
+  /* ─── Toast ─── */
+  .toast {
+    position: fixed; bottom: 30%;
+    left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.75);
+    color: #fff; padding: 10px 20px;
+    border-radius: 20px; font-size: 14px;
+    z-index: 200; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ─── 在线状态提示 ─── */
+  .status-bar {
+    text-align: center;
+    padding: 8px;
+    font-size: 12px; color: var(--text-light);
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+  .status-bar.waiting { color: #c0a060; }
+  .status-bar.ready { color: #6bbf59; }
+</style>
+</head>
+<body>
+
+<!-- ─── 进入页 ─── -->
+<div id="entryScreen">
+  <div class="logo">💌</div>
+  <div class="entry-title">情感导师</div>
+  <div class="entry-sub">你们的小房间，导师帮你们更好地在一起</div>
+  <div class="entry-card">
+    <div class="form-group">
+      <label class="form-label">房间号</label>
+      <input type="text" class="form-input" id="roomInput" placeholder="输入4位房间号" maxlength="4" inputmode="numeric">
+    </div>
+    <div class="form-group">
+      <label class="form-label">你是？</label>
+      <div class="identity-select">
+        <div class="identity-btn" data-identity="male" onclick="selectIdentity('male')">👨 男生</div>
+        <div class="identity-btn" data-identity="female" onclick="selectIdentity('female')">👩 女生</div>
+      </div>
+    </div>
+    <button class="btn-primary" id="joinBtn" onclick="joinRoom()">进入房间</button>
+  </div>
+</div>
+
+<!-- ─── 主界面 ─── -->
+<div id="mainScreen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="room-dot" id="dotMale"></span>
+      <span class="room-dot" id="dotFemale"></span>
+      <span class="room-info" id="roomInfo">房间 ----</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" onclick="copyLink()" title="复制链接给TA">🔗</button>
+      <button class="icon-btn" onclick="openSettings()" title="AI设置">⚙️</button>
+    </div>
+  </div>
+
+  <div class="status-bar waiting" id="statusBar">
+    等待TA加入…
+  </div>
+
+  <div class="advice-wall" id="adviceWall">
+    <div class="advice-empty" id="adviceEmpty">
+      <div class="emoji">🌱</div>
+      <div>导师还没有收到你们的倾诉</div>
+      <div style="margin-top:8px">在下方写下你想说的话，然后点「请导师回应」</div>
+    </div>
+    <div class="thinking-card" id="thinkingCard">
+      <div class="thinking-dots"><span></span><span></span><span></span></div>
+      <span class="thinking-text">导师正在认真听你们说…</span>
+    </div>
+  </div>
+
+  <div class="confession-area">
+    <div class="confession-label">
+      <span class="lock">🔒</span>
+      <span>你的倾诉区 · 只有导师能看到，对方无法查看</span>
+    </div>
+
+    <div class="my-confessions" id="myConfessions" style="display:none"></div>
+
+    <div class="tag-row">
+      <span class="tag-btn" data-tag-type="emotion" data-tag="委屈" onclick="toggleTag(this)">委屈</span>
+      <span class="tag-btn" data-tag-type="emotion" data-tag="生气" onclick="toggleTag(this)">生气</span>
+      <span class="tag-btn" data-tag-type="emotion" data-tag="冷淡" onclick="toggleTag(this)">冷淡</span>
+      <span class="tag-btn" data-tag-type="emotion" data-tag="内疚" onclick="toggleTag(this)">内疚</span>
+      <span class="tag-btn" data-tag-type="emotion" data-tag="迷茫" onclick="toggleTag(this)">迷茫</span>
+      <span class="tag-btn" data-tag-type="emotion" data-tag="期待" onclick="toggleTag(this)">期待</span>
+    </div>
+    <div class="tag-row">
+      <span class="tag-btn" data-tag-type="scene" data-tag="吵架了" onclick="toggleTag(this)">吵架了</span>
+      <span class="tag-btn" data-tag-type="scene" data-tag="冷战中" onclick="toggleTag(this)">冷战中</span>
+      <span class="tag-btn" data-tag-type="scene" data-tag="日常摩擦" onclick="toggleTag(this)">日常摩擦</span>
+      <span class="tag-btn" data-tag-type="scene" data-tag="异地思念" onclick="toggleTag(this)">异地思念</span>
+      <span class="tag-btn" data-tag-type="scene" data-tag="信任危机" onclick="toggleTag(this)">信任危机</span>
+      <span class="tag-btn" data-tag-type="scene" data-tag="其他" onclick="toggleTag(this)">其他</span>
+    </div>
+
+    <textarea class="confess-input" id="confessInput" placeholder="写下你当下的感受、困惑，或者想对TA说却说不出口的话…" oninput="autoResize(this)"></textarea>
+
+    <div class="confess-actions">
+      <button class="btn-confess" onclick="submitConfession()">提交倾诉</button>
+      <button class="btn-mentor" id="mentorBtn" onclick="askMentor()">请导师回应</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── 设置弹窗 ─── -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-card">
+    <div class="modal-title">AI 导师设置</div>
+    <div class="modal-sub">
+      配置一个大语言模型 API，导师就有了"大脑"。<br>
+      推荐使用 Kimi（月之暗面），注册即送免费额度。<br>
+      获取地址：<a href="https://platform.moonshot.cn/" target="_blank" style="color:var(--primary)">platform.moonshot.cn</a>
+    </div>
+
+    <div class="preset-row">
+      <div class="preset-btn active" data-preset="kimi" onclick="selectPreset('kimi')">Kimi</div>
+      <div class="preset-btn" data-preset="deepseek" onclick="selectPreset('deepseek')">DeepSeek</div>
+      <div class="preset-btn" data-preset="custom" onclick="selectPreset('custom')">自定义</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">API Key</label>
+      <input type="password" class="form-input" id="apiKeyInput" placeholder="粘贴你的 API Key">
+    </div>
+    <div class="form-group">
+      <label class="form-label">接口地址 (Base URL)</label>
+      <input type="text" class="form-input" id="baseUrlInput" placeholder="https://api.moonshot.cn/v1">
+    </div>
+    <div class="form-group">
+      <label class="form-label">模型名称</label>
+      <input type="text" class="form-input" id="modelInput" placeholder="moonshot-v1-8k">
+    </div>
+
+    <div style="font-size:12px;color:var(--text-light);margin-top:8px;line-height:1.6">
+      <b>Kimi</b>：注册 platform.moonshot.cn，在控制台获取 API Key<br>
+      <b>DeepSeek</b>：注册 platform.deepseek.com，获取 API Key
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeSettings()">取消</button>
+      <button class="btn-save" onclick="saveConfig()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toast ─── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── 全局状态 ───
+let myIdentity = null;
+let myRoomId = null;
+let selectedEmotion = null;
+let selectedScene = null;
+let pollTimer = null;
+
+const PRESETS = {
+  kimi: { baseURL: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
+  deepseek: { baseURL: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  custom: { baseURL: '', model: '' },
+};
+
+// ─── API 调用封装 ───
+async function apiCall(path, body) {
+  try {
+    const resp = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return await resp.json();
+  } catch (err) {
+    return { ok: false, error: '网络请求失败：' + err.message };
+  }
+}
+
+// ─── 进入房间 ───
+function selectIdentity(id) {
+  document.querySelectorAll('.identity-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-identity="${id}"]`).classList.add('active');
+  myIdentity = id;
+}
+
+document.getElementById('roomInput').addEventListener('input', (e) => {
+  e.target.value = e.target.value.replace(/[^0-9]/g, '');
+});
+
+async function joinRoom() {
+  const roomId = document.getElementById('roomInput').value.trim();
+  if (!roomId) { showToast('请输入房间号'); return; }
+  if (!myIdentity) { showToast('请选择你是男生还是女生'); return; }
+
+  myRoomId = roomId;
+
+  // 初始 poll
+  const result = await apiCall('/api/poll', { roomId, identity: myIdentity });
+  if (result.ok) {
+    document.getElementById('entryScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'flex';
+    document.getElementById('roomInfo').textContent = `房间 ${myRoomId}`;
+    updateUI(result.state);
+    startPolling();
+  } else {
+    showToast(result.error || '进入房间失败');
+  }
+}
+
+// ─── 轮询 ───
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(async () => {
+    if (!myRoomId || !myIdentity) return;
+    const result = await apiCall('/api/poll', { roomId: myRoomId, identity: myIdentity });
+    if (result.ok) {
+      updateUI(result.state);
+    }
+  }, 2000);
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+// ─── 更新界面 ───
+function updateUI(state) {
+  // 在线状态
+  const dotMale = document.getElementById('dotMale');
+  const dotFemale = document.getElementById('dotFemale');
+  dotMale.classList.toggle('online', state.online.male);
+  dotFemale.classList.toggle('online', state.online.female);
+
+  // 状态栏
+  const statusBar = document.getElementById('statusBar');
+  if (state.online.male && state.online.female) {
+    statusBar.textContent = '你们都到齐了，可以开始倾诉了';
+    statusBar.className = 'status-bar ready';
+  } else {
+    const otherSide = myIdentity === 'male' ? '女生' : '男生';
+    statusBar.textContent = `等待${otherSide}加入… 把链接发给TA吧`;
+    statusBar.className = 'status-bar waiting';
+  }
+
+  // 建议墙
+  const wall = document.getElementById('adviceWall');
+  const empty = document.getElementById('adviceEmpty');
+  const thinking = document.getElementById('thinkingCard');
+
+  // 清除旧建议卡片
+  wall.querySelectorAll('.advice-card').forEach(c => c.remove());
+
+  if (state.advices.length === 0) {
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    state.advices.forEach(advice => {
+      const card = document.createElement('div');
+      card.className = 'advice-card';
+      const time = new Date(advice.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      card.innerHTML = `
+        <div class="advice-header">
+          <div class="advice-avatar">✨</div>
+          <span class="advice-name">情感导师</span>
+          <span class="advice-time">${time}</span>
+        </div>
+        <div class="advice-content">${formatAdvice(advice.content)}</div>
+      `;
+      wall.insertBefore(card, thinking);
+    });
+    scrollToBottom();
+  }
+
+  // 思考动画
+  const mentorBtn = document.getElementById('mentorBtn');
+  if (state.mentorThinking) {
+    thinking.classList.add('show');
+    mentorBtn.disabled = true;
+    mentorBtn.textContent = '导师思考中…';
+    scrollToBottom();
+  } else {
+    thinking.classList.remove('show');
+    mentorBtn.disabled = false;
+    mentorBtn.textContent = '请导师回应';
+  }
+
+  // 导师错误
+  if (state.mentorError) {
+    showToast(state.mentorError);
+    // 清除错误，避免反复弹出
+    apiCall('/api/clear-error', { roomId: myRoomId });
+  }
+
+  // 我的倾诉历史
+  const myConf = document.getElementById('myConfessions');
+  if (state.myConfessions.length > 0) {
+    myConf.style.display = 'block';
+    myConf.innerHTML = state.myConfessions.map(c => {
+      const time = new Date(c.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="my-confession-item"><span class="tags">[${c.emotion}·${c.scene}]</span><span class="text">${escapeHtml(c.text)}</span> <span style="float:right">${time}</span></div>`;
+    }).join('');
+  } else {
+    myConf.style.display = 'none';
+  }
+}
+
+// ─── 格式化导师建议 ───
+function formatAdvice(text) {
+  let html = escapeHtml(text);
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return html;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ─── 标签选择 ───
+function toggleTag(el) {
+  const type = el.dataset.tagType;
+  const tag = el.dataset.tag;
+
+  document.querySelectorAll(`[data-tag-type="${type}"]`).forEach(b => b.classList.remove('active'));
+
+  if (type === 'emotion') {
+    selectedEmotion = selectedEmotion === tag ? null : tag;
+    if (selectedEmotion) el.classList.add('active');
+    else el.classList.remove('active');
+  } else {
+    selectedScene = selectedScene === tag ? null : tag;
+    if (selectedScene) el.classList.add('active');
+    else el.classList.remove('active');
+  }
+}
+
+// ─── 提交倾诉 ───
+async function submitConfession() {
+  const text = document.getElementById('confessInput').value.trim();
+  if (!text) { showToast('请写点什么'); return; }
+
+  const result = await apiCall('/api/confess', {
+    roomId: myRoomId,
+    identity: myIdentity,
+    emotion: selectedEmotion || '未选择',
+    scene: selectedScene || '其他',
+    text,
+  });
+
+  if (result.ok) {
+    document.getElementById('confessInput').value = '';
+    document.querySelectorAll('.tag-btn.active').forEach(b => b.classList.remove('active'));
+    selectedEmotion = null;
+    selectedScene = null;
+    autoResize(document.getElementById('confessInput'));
+    showToast('倾诉已提交，导师看到了');
+    // 立即 poll 一次
+    const pollResult = await apiCall('/api/poll', { roomId: myRoomId, identity: myIdentity });
+    if (pollResult.ok) updateUI(pollResult.state);
+  } else {
+    showToast(result.error || '提交失败');
+  }
+}
+
+// ─── 请导师回应 ───
+async function askMentor() {
+  const result = await apiCall('/api/ask-mentor', {
+    roomId: myRoomId,
+    identity: myIdentity,
+  });
+
+  if (result.ok) {
+    // 立即 poll 一次以显示思考状态
+    const pollResult = await apiCall('/api/poll', { roomId: myRoomId, identity: myIdentity });
+    if (pollResult.ok) updateUI(pollResult.state);
+  } else {
+    showToast(result.error || '请求失败');
+  }
+}
+
+// ─── 设置 ───
+function openSettings() {
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
+
+function selectPreset(key) {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-preset="${key}"]`).classList.add('active');
+
+  const preset = PRESETS[key];
+  if (key !== 'custom') {
+    document.getElementById('baseUrlInput').value = preset.baseURL;
+    document.getElementById('modelInput').value = preset.model;
+  }
+}
+
+async function saveConfig() {
+  const apiKey = document.getElementById('apiKeyInput').value.trim();
+  const baseURL = document.getElementById('baseUrlInput').value.trim();
+  const model = document.getElementById('modelInput').value.trim();
+
+  if (!apiKey) { showToast('请输入 API Key'); return; }
+  if (!baseURL) { showToast('请输入接口地址'); return; }
+  if (!model) { showToast('请输入模型名称'); return; }
+
+  const result = await apiCall('/api/config', {
+    roomId: myRoomId,
+    apiKey,
+    baseURL,
+    model,
+  });
+
+  if (result.ok) {
+    showToast('AI 配置已保存');
+    closeSettings();
+  } else {
+    showToast(result.error || '保存失败');
+  }
+}
+
+// ─── 复制链接 ───
+function copyLink() {
+  const url = `${location.origin}/?room=${myRoomId}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      showToast('链接已复制，发给TA吧');
+    }).catch(() => {
+      fallbackCopy(url);
+    });
+  } else {
+    fallbackCopy(url);
+  }
+}
+
+function fallbackCopy(url) {
+  const input = document.createElement('input');
+  input.value = url;
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand('copy');
+  document.body.removeChild(input);
+  showToast('链接已复制，发给TA吧');
+}
+
+// ─── 工具函数 ───
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function scrollToBottom() {
+  const wall = document.getElementById('adviceWall');
+  setTimeout(() => { wall.scrollTop = wall.scrollHeight; }, 50);
+}
+
+function showToast(text) {
+  const toast = document.getElementById('toast');
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ─── URL 参数自动填充房间号 ───
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(location.search);
+  const room = params.get('room');
+  if (room) {
+    document.getElementById('roomInput').value = room;
+  }
+});
+
+// 页面隐藏时停止轮询，可见时恢复（节省资源）
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopPolling();
+  } else if (myRoomId && myIdentity) {
+    startPolling();
+  }
+});
+</script>
+
+</body>
+</html>
